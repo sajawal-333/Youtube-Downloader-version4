@@ -222,10 +222,10 @@ def build_opts(output_dir: Path, quality: str, output_type: str, mp3_bitrate: in
         'prefer_insecure': True,
         'http_headers': headers,
         'progress_hooks': [progress_hook] if progress_id else [],
-        # 'web' client exposes all resolutions including 4K/1440p/1080p
+        # web+android gives best format coverage without bot-detection timeouts
         'extractor_args': {
             'youtube': {
-                'player_client': ['web'],
+                'player_client': ['web', 'android'],
             }
         },
     }
@@ -282,40 +282,33 @@ def _try_download(url, temp_dir, opts, label="primary"):
 
 def download_with_fallbacks(url, temp_dir, quality, output_type, mp3_bitrate,
                             referer, user_agent, extra_headers, progress_id, format_id=None):
-    """Try multiple download strategies."""
+    """Try multiple download strategies in order of preference."""
 
-    # Strategy 1: Primary — bestvideo+bestaudio merged via ffmpeg (web client)
+    def clean_dir():
+        for f in temp_dir.glob('*'):
+            try: f.unlink()
+            except: pass
+
+    # ── Strategy 1: web + android (best format coverage + quality) ──
     opts = build_opts(temp_dir, quality, output_type, mp3_bitrate,
                       referer, user_agent, extra_headers, progress_id, format_id)
-    if _try_download(url, temp_dir, opts, "primary (web+ffmpeg)"):
+    if _try_download(url, temp_dir, opts, "web+android"):
         return True
+    clean_dir()
 
-    # Clean temp dir between strategies
-    for f in temp_dir.glob('*'):
-        try: f.unlink()
-        except: pass
-
-    # Strategy 2: android client fallback — still uses our quality format
-    logger.info("Trying android client fallback...")
+    # ── Strategy 2: android client only ──
+    logger.info("Trying android-only fallback...")
     opts2 = build_opts(temp_dir, quality, output_type, mp3_bitrate,
                        referer, user_agent, extra_headers, progress_id, format_id)
-    opts2['extractor_args'] = {
-        'youtube': {
-            'player_client': ['android'],
-        }
-    }
-    # Keep merge_output_format so quality is not downgraded
-    if _try_download(url, temp_dir, opts2, "android client"):
+    opts2['extractor_args'] = {'youtube': {'player_client': ['android']}}
+    if _try_download(url, temp_dir, opts2, "android"):
         return True
+    clean_dir()
 
-    for f in temp_dir.glob('*'):
-        try: f.unlink()
-        except: pass
-
-    # Strategy 3: Last resort — tv client, still respect quality selection
-    logger.info("Trying tv+web last resort...")
-    fmt = build_format_string(quality) if output_type == 'mp4' else 'bestaudio[ext=m4a]/bestaudio/best'
-    fallback_opts = {
+    # ── Strategy 3: android UA header, simpler format ──
+    logger.info("Trying android UA last resort...")
+    fmt = 'bestaudio[ext=m4a]/bestaudio/best' if output_type == 'mp3' else 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best'
+    last_opts = {
         'format': fmt,
         'merge_output_format': 'mp4',
         'outtmpl': str(temp_dir / '%(title)s [%(id)s].%(ext)s'),
@@ -325,19 +318,14 @@ def download_with_fallbacks(url, temp_dir, quality, output_type, mp3_bitrate,
         'no_check_certificate': True,
         'prefer_insecure': True,
         'geo_bypass': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['tv'],
-            }
-        },
+        'extractor_args': {'youtube': {'player_client': ['android']}},
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/6.0 TV Safari/538.1',
+            'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14)',
         },
     }
     if COOKIE_FILE_PATH and os.path.isfile(COOKIE_FILE_PATH):
-        fallback_opts['cookiefile'] = COOKIE_FILE_PATH
-
-    if _try_download(url, temp_dir, fallback_opts, "tv client"):
+        last_opts['cookiefile'] = COOKIE_FILE_PATH
+    if _try_download(url, temp_dir, last_opts, "android-ua"):
         return True
 
     return False
