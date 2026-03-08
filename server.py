@@ -284,37 +284,40 @@ def download_with_fallbacks(url, temp_dir, quality, output_type, mp3_bitrate,
                             referer, user_agent, extra_headers, progress_id, format_id=None):
     """Try multiple download strategies."""
 
-    # Strategy 1: Primary (pre-muxed preferred + web,android client)
+    # Strategy 1: Primary — bestvideo+bestaudio merged via ffmpeg (web client)
     opts = build_opts(temp_dir, quality, output_type, mp3_bitrate,
                       referer, user_agent, extra_headers, progress_id, format_id)
-    if _try_download(url, temp_dir, opts, "pre-muxed + web,android"):
+    if _try_download(url, temp_dir, opts, "primary (web+ffmpeg)"):
         return True
 
-    # Clean temp dir
+    # Clean temp dir between strategies
     for f in temp_dir.glob('*'):
-        f.unlink()
+        try: f.unlink()
+        except: pass
 
-    # Strategy 2: iOS client with web fallback (bypasses bot detection)
-    logger.info("Trying iOS + web client fallback...")
+    # Strategy 2: android client fallback — still uses our quality format
+    logger.info("Trying android client fallback...")
     opts2 = build_opts(temp_dir, quality, output_type, mp3_bitrate,
                        referer, user_agent, extra_headers, progress_id, format_id)
-    opts2.pop('merge_output_format', None)
-    opts2.pop('postprocessors', None)
     opts2['extractor_args'] = {
         'youtube': {
-            'player_client': ['ios,web'],
+            'player_client': ['android'],
         }
     }
-    if _try_download(url, temp_dir, opts2, "ios+web client"):
+    # Keep merge_output_format so quality is not downgraded
+    if _try_download(url, temp_dir, opts2, "android client"):
         return True
 
     for f in temp_dir.glob('*'):
-        f.unlink()
+        try: f.unlink()
+        except: pass
 
-    # Strategy 3: TV client combined with Android
-    logger.info("Trying tv + android fallback...")
+    # Strategy 3: Last resort — tv client, still respect quality selection
+    logger.info("Trying tv+web last resort...")
+    fmt = build_format_string(quality) if output_type == 'mp4' else 'bestaudio[ext=m4a]/bestaudio/best'
     fallback_opts = {
-        'format': 'best[ext=mp4]/best',
+        'format': fmt,
+        'merge_output_format': 'mp4',
         'outtmpl': str(temp_dir / '%(title)s [%(id)s].%(ext)s'),
         'noplaylist': True,
         'quiet': True,
@@ -324,17 +327,17 @@ def download_with_fallbacks(url, temp_dir, quality, output_type, mp3_bitrate,
         'geo_bypass': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['tv,android'],
+                'player_client': ['tv'],
             }
         },
         'http_headers': {
-            'User-Agent': 'com.google.android.youtube/19.29.37 (Linux; U; Android 14)',
+            'User-Agent': 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/6.0 TV Safari/538.1',
         },
     }
     if COOKIE_FILE_PATH and os.path.isfile(COOKIE_FILE_PATH):
         fallback_opts['cookiefile'] = COOKIE_FILE_PATH
 
-    if _try_download(url, temp_dir, fallback_opts, "android UA"):
+    if _try_download(url, temp_dir, fallback_opts, "tv client"):
         return True
 
     return False
