@@ -1,0 +1,6 @@
+Flask
+Flask-CORS
+yt-dlp
+gunicorn
+Werkzeug>=2.3.0,<3.1
+Flask-Limiter

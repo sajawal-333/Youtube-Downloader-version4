@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Downloader - Fast & Professional</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --primary-light: #60a5fa;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-top: 20px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px -1px rgb(59 130 246 / 0.3);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgb(59 130 246 / 0.4);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+      box-shadow: none;
+      font-size: 14px;
+      padding: 10px 16px;
+      margin-top: 12px;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #cbd5e1;
+      box-shadow: none;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 16px;
+      transition: all 0.3s;
+    }
+
+    .status-idle {
+      background: #f1f5f9;
+      color: var(--text-muted);
+    }
+
+    .status-loading {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .status-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .progress-bar.active {
+      display: block;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      width: 0%;
+      transition: width 0.3s;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.6;
+      }
+    }
+
+    .advanced-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 16px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+
+    .advanced-toggle:hover {
+      background: #eff6ff;
+    }
+
+    .advanced-options {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .advanced-options.open {
+      max-height: 500px;
+      margin-top: 16px;
+    }
+
+    .info-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border-left: 4px solid var(--primary);
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .info-card strong {
+      color: var(--primary-dark);
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .card {
+        padding: 24px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .logo {
+        font-size: 28px;
+      }
+    }
+
+    /* Smooth transitions */
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <span>🎬</span>
+        <span>Video Downloader</span>
+      </div>
+      <p class="subtitle">Fast, simple, and professional video downloads</p>
+    </div>
+
+    <div class="card">
+      <form id="downloadForm">
+        <div class="form-group">
+          <label for="url">Video URL</label>
+          <input type="url" id="url" placeholder="https://www.youtube.com/watch?v=..." required autocomplete="off">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="quality">Quality</label>
+            <select id="quality">
+              <option value="best">Best Available</option>
+              <option value="2160p">4K (2160p)</option>
+              <option value="1440p">2K (1440p)</option>
+              <option value="1080p" selected>Full HD (1080p)</option>
+              <option value="720p">HD (720p)</option>
+              <option value="480p">SD (480p)</option>
+              <option value="360p">Low (360p)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="outputType">Format</label>
+            <select id="outputType">
+              <option value="mp4">Video (MP4)</option>
+              <option value="mp3">Audio Only (MP3)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" id="mp3BitrateGroup">
+          <label for="mp3Bitrate">Audio Quality</label>
+          <select id="mp3Bitrate">
+            <option value="128">128 kbps</option>
+            <option value="192" selected>192 kbps</option>
+            <option value="256">256 kbps</option>
+            <option value="320">320 kbps (Best)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn" id="downloadBtn">
+          <span id="btnText">Download Now</span>
+        </button>
+
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="status status-idle" id="status">
+          <span>Ready to download</span>
+        </div>
+
+        <div class="advanced-toggle" id="advancedToggle">
+          ⚙️ Advanced Options
+        </div>
+
+        <div class="advanced-options" id="advancedOptions">
+          <div class="form-group">
+            <label for="referer">Referer (Optional)</label>
+            <input type="text" id="referer" placeholder="https://example.com">
+          </div>
+
+          <div class="form-group">
+            <label for="userAgent">User Agent (Optional)</label>
+            <input type="text" id="userAgent" placeholder="Custom user agent string">
+          </div>
+
+          <div class="form-group">
+            <label for="extraHeaders">Extra Headers (Optional)</label>
+            <input type="text" id="extraHeaders" placeholder="Key: Value; Key2: Value2">
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card info-card">
+      <strong>✨ Features:</strong>
+      <div class="feature-list">
+        <div class="feature-item">✓ Multiple qualities</div>
+        <div class="feature-item">✓ MP4 & MP3 support</div>
+        <div class="feature-item">✓ Fast downloads</div>
+        <div class="feature-item">✓ No registration</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const form = $('downloadForm');
+    const downloadBtn = $('downloadBtn');
+    const btnText = $('btnText');
+    const status = $('status');
+    const progressBar = $('progressBar');
+    const progressFill = $('progressFill');
+    const advancedToggle = $('advancedToggle');
+    const advancedOptions = $('advancedOptions');
+    const outputType = $('outputType');
+    const mp3BitrateGroup = $('mp3BitrateGroup');
+
+    let progressInterval = null;
+
+    // Toggle MP3 bitrate visibility
+    outputType.addEventListener('change', () => {
+      mp3BitrateGroup.style.display = outputType.value === 'mp3' ? 'block' : 'none';
+    });
+    mp3BitrateGroup.style.display = 'none';
+
+    // Advanced options toggle
+    advancedToggle.addEventListener('click', () => {
+      advancedOptions.classList.toggle('open');
+      advancedToggle.textContent = advancedOptions.classList.contains('open')
+        ? '⚙️ Hide Advanced Options'
+        : '⚙️ Advanced Options';
+    });
+
+    // Update status
+    function setStatus(message, type = 'idle') {
+      status.className = `status status-${type} fade-in`;
+      status.innerHTML = `<span>${message}</span>`;
+    }
+
+    // Format bytes to human readable
+    function formatBytes(bytes) {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+
+    // Format speed
+    function formatSpeed(bytesPerSec) {
+      if (!bytesPerSec || bytesPerSec === 0) return '0 KB/s';
+      return formatBytes(bytesPerSec) + '/s';
+    }
+
+    // Format time
+    function formatTime(seconds) {
+      if (!seconds || seconds === 0) return '0s';
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+    }
+
+    // Poll progress
+    function pollProgress(progressId) {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+
+      progressInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`/api/progress/${progressId}`);
+          const data = await response.json();
+
+          if (data.percentage !== undefined) {
+            progressFill.style.width = `${data.percentage}%`;
+
+            let statusMsg = `⬇️ Downloading: ${data.percentage}%`;
+            if (data.speed) {
+              statusMsg += ` • ${formatSpeed(data.speed)}`;
+            }
+            if (data.eta) {
+              statusMsg += ` • ETA: ${formatTime(data.eta)}`;
+            }
+            if (data.downloaded && data.total) {
+              statusMsg += ` • ${formatBytes(data.downloaded)} / ${formatBytes(data.total)}`;
+            }
+
+            setStatus(statusMsg, 'loading');
+          }
+        } catch (error) {
+          console.error('Progress poll error:', error);
+        }
+      }, 500); // Poll every 500ms
+    }
+
+    // Stop polling
+    function stopPolling() {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    }
+
+    // Parse headers
+    function parseHeaders(raw) {
+      const headers = {};
+      if (!raw) return headers;
+      try {
+        raw.split(';').forEach(part => {
+          const trimmed = part.trim();
+          if (!trimmed) return;
+          const idx = trimmed.indexOf(':');
+          if (idx > 0) {
+            const key = trimmed.slice(0, idx).trim();
+            const value = trimmed.slice(idx + 1).trim();
+            if (key) headers[key] = value;
+          }
+        });
+      } catch (e) {
+        console.warn('Header parse error:', e);
+      }
+      return headers;
+    }
+
+    // Generate unique progress ID
+    function generateProgressId() {
+      return 'progress_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    // Handle form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const url = $('url').value.trim();
+      if (!url) {
+        setStatus('⚠️ Please enter a video URL', 'error');
+        return;
+      }
+
+      // Disable button and show loading
+      downloadBtn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span> Initializing...';
+      setStatus('🔄 Preparing download...', 'loading');
+      progressBar.classList.add('active');
+      progressFill.style.width = '0%';
+
+      const progressId = generateProgressId();
+
+      const payload = {
+        url: url,
+        quality: $('quality').value,
+        outputType: $('outputType').value,
+        mp3Bitrate: parseInt($('mp3Bitrate').value, 10),
+        referer: $('referer').value.trim() || '',
+        userAgent: $('userAgent').value.trim() || '',
+        headers: parseHeaders($('extraHeaders').value),
+        progressId: progressId
+      };
+
+      try {
+        // Start polling for progress
+        pollProgress(progressId);
+
+        btnText.innerHTML = '<span class="spinner"></span> Downloading...';
+        setStatus('⬇️ Downloading: 0%', 'loading');
+
+        const response = await fetch('/api/direct-download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        // Stop polling
+        stopPolling();
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Server error: ${response.status}`);
+        }
+
+        progressFill.style.width = '100%';
+        setStatus('💾 Preparing file...', 'loading');
+
+        // Get filename from headers
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'video.mp4';
+        if (contentDisposition) {
+          const match = contentDisposition.match(/filename="(.+)"/);
+          if (match) filename = match[1];
+        }
+
+        // Download the file
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(downloadUrl);
+        document.body.removeChild(a);
+
+        const fileSize = formatBytes(blob.size);
+        setStatus(`✅ Download complete! (${fileSize}) Check your downloads folder.`, 'success');
+
+        // Reset after 3 seconds
+        setTimeout(() => {
+          downloadBtn.disabled = false;
+          btnText.textContent = 'Download Now';
+          setStatus('Ready to download', 'idle');
+          progressBar.classList.remove('active');
+          progressFill.style.width = '0%';
+        }, 3000);
+
+      } catch (error) {
+        console.error('Download error:', error);
+        stopPolling();
+        setStatus(`❌ Error: ${error.message}`, 'error');
+        downloadBtn.disabled = false;
+        btnText.textContent = 'Download Now';
+        progressBar.classList.remove('active');
+        progressFill.style.width = '0%';
+      }
+    });
+  </script>
+</body>
+
+</html>
